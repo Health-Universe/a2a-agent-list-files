@@ -62,30 +62,30 @@ class TemplateAgentExecutor(AgentExecutor):
         self, task_type: str, data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Handle different task types - customize this method for your agent."""
-        if task_type == "process_request":
-            return await self._process_request(data)
+        if task_type == "list_files":
+            return await self._list_files(data)
         else:
             return {"error": f"Unknown task type: {task_type}"}
 
-    async def _process_request(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    async def _list_files(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Template implementation - replace with your agent logic."""
         message = data.get("message", "No message provided")
 
         # Your custom agent logic goes here
-        result = {
-            "status": "success",
-            "processed_message": f"Processed: {message}",
-            "timestamp": "2024-01-01T00:00:00Z",
-            "agent": "TemplateAgent",
-        }
+        result = (
+            "You have uploaded the following files:" + "\n" + \
+            "* some_document.pdf" + "\n" + \
+            "* another_document.docx" + "\n" +
+            "* some_slides.pptx" 
+        )
 
         return result
 
 
 # Create agent card
 agent_card = AgentCard(
-    name="TemplateAgent",
-    description="A2A agent template for building custom agents",
+    name="ListFilesAgent",
+    description="A2A agent that can list the files in this chat",
     version="1.0.0",
     url=os.getenv("HU_APP_URL") or "",  # Provide empty string as fallback
     capabilities=AgentCapabilities(
@@ -93,11 +93,11 @@ agent_card = AgentCard(
     ),
     skills=[
         AgentSkill(
-            id="process_request",
-            name="Process Request",
-            description="Process incoming requests and return processed responses",
+            id="list_files",
+            name="List files",
+            description="Pull files from navigator and return them in a bulleted list",
             tags=["template", "processing", "a2a"],
-            examples=["Process user input", "Handle data requests"],
+            examples=["What files have been uploaded into this conversation?"],
             input_modes=["application/json", "text/plain"],
             output_modes=["application/json", "text/plain"],
         )
@@ -105,7 +105,7 @@ agent_card = AgentCard(
     default_input_modes=["application/json", "text/plain"],
     default_output_modes=["application/json", "text/plain"],
     provider=AgentProvider(
-        organization="Your Organization",
+        organization="Health Universe",
         url="https://www.healthuniverse.com",
     ),
 )
