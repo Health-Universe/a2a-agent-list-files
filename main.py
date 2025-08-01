@@ -89,7 +89,7 @@ agent_card = AgentCard(
     version="1.0.0",
     url=os.getenv("HU_APP_URL") or "",  # Provide empty string as fallback
     capabilities=AgentCapabilities(
-        streaming=False, push_notifications=False, state_transition_history=True
+        streaming=True, push_notifications=False, state_transition_history=True
     ),
     skills=[
         AgentSkill(
