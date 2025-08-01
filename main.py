@@ -31,7 +31,7 @@ class TemplateAgentExecutor(AgentExecutor):
             # Extract task information from context
             message_parts = context.message.parts if context.message else []
             task_data = {}
-            task_type = "process_request"
+            task_type = "list_files"
 
             # Parse message content to extract task type and data
             if message_parts and len(message_parts) > 0:
@@ -39,7 +39,7 @@ class TemplateAgentExecutor(AgentExecutor):
                     try:
                         # Try to parse as JSON for structured requests
                         parsed_data = json.loads(message_parts[0].text)
-                        task_type = parsed_data.get("task_type", "process_request")
+                        task_type = parsed_data.get("task_type", "list_files")
                         task_data = parsed_data.get("data", {})
                     except (json.JSONDecodeError, AttributeError):
                         # Handle as plain text request
@@ -103,7 +103,7 @@ agent_card = AgentCard(
         )
     ],
     default_input_modes=["application/json", "text/plain"],
-    default_output_modes=["application/json", "text/plain"],
+    default_output_modes=["text/plain"],
     provider=AgentProvider(
         organization="Health Universe",
         url="https://www.healthuniverse.com",
@@ -117,7 +117,7 @@ request_handler = DefaultRequestHandler(
     agent_executor=agent_executor,
     task_store=InMemoryTaskStore(),
 )
-app = A2AStarletteApplication(agent_card=agent_card, http_handler=request_handler)
+app = A2AStarletteApplication(agent_card=agent_card, http_handler=request_handler).build()
 
 if __name__ == "__main__":
 
