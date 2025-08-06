@@ -49,7 +49,7 @@ class ListFilesAgentExecutor(AgentExecutor):
             result = await self._handle_task(task_type, task_data, context.metadata)
 
             await event_queue.enqueue_event(
-                new_agent_text_message(json.dumps(result, indent=2))
+                new_agent_text_message(json.dumps(result, indent=2), context_id=context.context_id, task_id=context.task_id)
             )
 
         except Exception as e:
@@ -73,8 +73,8 @@ class ListFilesAgentExecutor(AgentExecutor):
 
         # Your custom agent logic goes here
         result = (
-            f'Your user id is {metadata.get("user_id", "unknown")} {metadata.get("userId", "unknown")}' + "\n" + \
-            f'Your thread id is {metadata.get("thread_id", "unknown")} {metadata.get("threadId", "unknown")}' + "\n\n"
+            f'Your user id is {metadata.get("user_id", "unknown")}' + "\n" + \
+            f'Your thread id is {metadata.get("thread_id", "unknown")}' + "\n\n"
         )
 
         return result
