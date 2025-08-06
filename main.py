@@ -40,7 +40,7 @@ class ListFilesAgentExecutor(AgentExecutor):
             auth_header = headers.get("authorization")
 
             if auth_header and auth_header.startswith("Bearer "):
-                return auth_header[7:]  # Strip "Bearer "
+                return auth_header[7:]
         
         return None
         # raise ValueError("Missing or malformed Authorization header")
@@ -72,7 +72,7 @@ class ListFilesAgentExecutor(AgentExecutor):
             token = self.get_token_from_context(context)
 
             # Process the task
-            result = await self._handle_task(task_type, task_data, context.metadata)
+            result = await self._handle_task(task_type, task_data, context.metadata, token)
             result_message = new_agent_text_message(
                 json.dumps({**result, "token": token }, indent=2), context_id=context.context_id, task_id=context.task_id)
             
@@ -95,15 +95,15 @@ class ListFilesAgentExecutor(AgentExecutor):
         raise ServerError(error=UnsupportedOperationError())
 
     async def _handle_task(
-        self, task_type: str, data: Dict[str, Any], metadata: Dict[str, Any],
+        self, task_type: str, data: Dict[str, Any], metadata: Dict[str, Any], token: str | None,
     ) -> Dict[str, Any]:
         """Handle different task types - customize this method for your agent."""
         if task_type == "list_files":
-            return await self._list_files(data, metadata)
+            return await self._list_files(data, metadata, token)
         else:
             return {"error": f"Unknown task type: {task_type}"}
 
-    async def _list_files(self, data: Dict[str, Any], metadata: dict[str, Any], token: str) -> Dict[str, Any]:
+    async def _list_files(self, data: Dict[str, Any], metadata: dict[str, Any], token: str | None) -> Dict[str, Any]:
         """Template implementation - replace with your agent logic."""
         message = data.get("message", "No message provided")
 
