@@ -61,21 +61,20 @@ class ListFilesAgentExecutor(AgentExecutor):
             result = await self._handle_task(task_type, task_data, context.metadata)
             result_message = new_agent_text_message(json.dumps(result, indent=2), context_id=context.context_id, task_id=context.task_id)
             
-            if task_updater:
-                await task_updater.complete(result_message)
-            else:
-                await event_queue.enqueue_event(
-                    new_agent_text_message(json.dumps(result, indent=2), context_id=context.context_id, task_id=context.task_id)
-                )
+            await event_queue.enqueue_event(
+                result_message
+            )
 
+            if task_updater:
+                await task_updater.complete()
 
         except Exception as e:
             error_message = new_agent_text_message(f"Error: {str(e)}")
             
+            await event_queue.enqueue_event(error_message)
+
             if task_updater:
-                await task_updater.failed(error_message)
-            else:    
-                await event_queue.enqueue_event(error_message)
+                await task_updater.failed()
 
     async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
         raise ServerError(error=UnsupportedOperationError())
