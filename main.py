@@ -15,6 +15,7 @@ from a2a.types import (
 from a2a.utils import new_agent_text_message
 from a2a.utils.errors import ServerError, UnsupportedOperationError
 from a2a.server.agent_execution import AgentExecutor, RequestContext
+from a2a.server.tasks.task_updater import TaskUpdater
 from a2a.server.events import EventQueue
 from a2a.server.request_handlers import DefaultRequestHandler, RequestHandler
 
@@ -25,9 +26,20 @@ class ListFilesAgentExecutor(AgentExecutor):
     def __init__(self):
         super().__init__()
 
+    def get_task_updater(self, context: RequestContext, event_queue: EventQueue) -> TaskUpdater | None:
+        if context.context_id and context.task_id:
+            task_updater = TaskUpdater(event_queue=event_queue, context_id=context.context_id, task_id=context.task_id)
+        else:
+            task_updater = None
+
+        return task_updater
+
     async def execute(self, context: RequestContext, event_queue: EventQueue) -> None:
         """Execute method required by AgentExecutor interface."""
+        task_updater = self.get_task_updater(context, event_queue)
+
         try:
+
             # Extract task information from context
             message_parts = context.message.parts if context.message else []
             task_data = {}
@@ -47,13 +59,23 @@ class ListFilesAgentExecutor(AgentExecutor):
 
             # Process the task
             result = await self._handle_task(task_type, task_data, context.metadata)
+            result_message = new_agent_text_message(json.dumps(result, indent=2), context_id=context.context_id, task_id=context.task_id)
+            
+            if task_updater:
+                await task_updater.complete(result_message)
+            else:
+                await event_queue.enqueue_event(
+                    new_agent_text_message(json.dumps(result, indent=2), context_id=context.context_id, task_id=context.task_id)
+                )
 
-            await event_queue.enqueue_event(
-                new_agent_text_message(json.dumps(result, indent=2), context_id=context.context_id, task_id=context.task_id)
-            )
 
         except Exception as e:
-            await event_queue.enqueue_event(new_agent_text_message(f"Error: {str(e)}"))
+            error_message = new_agent_text_message(f"Error: {str(e)}")
+            
+            if task_updater:
+                await task_updater.failed(error_message)
+            else:    
+                await event_queue.enqueue_event(error_message)
 
     async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
         raise ServerError(error=UnsupportedOperationError())
