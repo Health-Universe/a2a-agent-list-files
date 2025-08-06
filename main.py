@@ -19,7 +19,7 @@ from a2a.server.events import EventQueue
 from a2a.server.request_handlers import DefaultRequestHandler, RequestHandler
 
 
-class TemplateAgentExecutor(AgentExecutor):
+class ListFilesAgentExecutor(AgentExecutor):
     """A2A Agent Executor template for building agent-to-agent applications."""
 
     def __init__(self):
@@ -35,15 +35,15 @@ class TemplateAgentExecutor(AgentExecutor):
 
             # Parse message content to extract task type and data
             if message_parts and len(message_parts) > 0:
-                if hasattr(message_parts[0], "text"):
+                if hasattr(message_parts[0].root, "text"):
                     try:
                         # Try to parse as JSON for structured requests
-                        parsed_data = json.loads(message_parts[0].text)
+                        parsed_data = json.loads(message_parts[0].root.text)
                         task_type = parsed_data.get("task_type", "list_files")
                         task_data = parsed_data.get("data", {})
                     except (json.JSONDecodeError, AttributeError):
                         # Handle as plain text request
-                        task_data = {"message": message_parts[0].text}
+                        task_data = {"message": message_parts[0].root.text}
 
             # Process the task
             result = await self._handle_task(task_type, task_data)
@@ -55,7 +55,7 @@ class TemplateAgentExecutor(AgentExecutor):
         except Exception as e:
             await event_queue.enqueue_event(new_agent_text_message(f"Error: {str(e)}"))
 
-    async def cancel(self, request: RequestContext, event_queue: EventQueue) -> None:
+    async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
         raise ServerError(error=UnsupportedOperationError())
 
     async def _handle_task(
@@ -111,7 +111,7 @@ agent_card = AgentCard(
 )
 
 # Create the A2A Starlette application
-agent_executor = TemplateAgentExecutor()
+agent_executor = ListFilesAgentExecutor()
 
 request_handler = DefaultRequestHandler(
     agent_executor=agent_executor,
