@@ -46,7 +46,7 @@ class ListFilesAgentExecutor(AgentExecutor):
                         task_data = {"message": message_parts[0].root.text}
 
             # Process the task
-            result = await self._handle_task(task_type, task_data)
+            result = await self._handle_task(task_type, task_data, context.metadata)
 
             await event_queue.enqueue_event(
                 new_agent_text_message(json.dumps(result, indent=2))
@@ -59,24 +59,22 @@ class ListFilesAgentExecutor(AgentExecutor):
         raise ServerError(error=UnsupportedOperationError())
 
     async def _handle_task(
-        self, task_type: str, data: Dict[str, Any]
+        self, task_type: str, data: Dict[str, Any], metadata: Dict[str, Any],
     ) -> Dict[str, Any]:
         """Handle different task types - customize this method for your agent."""
         if task_type == "list_files":
-            return await self._list_files(data)
+            return await self._list_files(data, metadata)
         else:
             return {"error": f"Unknown task type: {task_type}"}
 
-    async def _list_files(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    async def _list_files(self, data: Dict[str, Any], metadata: dict[str, Any]) -> Dict[str, Any]:
         """Template implementation - replace with your agent logic."""
         message = data.get("message", "No message provided")
 
         # Your custom agent logic goes here
         result = (
-            "You have uploaded the following files:" + "\n" + \
-            "* some_document.pdf" + "\n" + \
-            "* another_document.docx" + "\n" +
-            "* some_slides.pptx" 
+            f'Your user id is {metadata.get("user_id", "unknown")} {metadata.get("userId", "unknown")}' + "\n" + \
+            f'Your thread id is {metadata.get("thread_id", "unknown")} {metadata.get("threadId", "unknown")}' + "\n\n"
         )
 
         return result
