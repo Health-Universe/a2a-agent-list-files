@@ -34,11 +34,21 @@ class ListFilesAgentExecutor(AgentExecutor):
 
         return task_updater
 
+    def get_token_from_context(self, context: RequestContext) -> str | None:
+        if call_context := context._call_context:
+            headers = call_context.state.get("headers", {})
+            auth_header = headers.get("authorization")
+
+            if auth_header and auth_header.startswith("Bearer "):
+                return auth_header[7:]  # Strip "Bearer "
+        
+        return None
+        # raise ValueError("Missing or malformed Authorization header")
+
     async def execute(self, context: RequestContext, event_queue: EventQueue) -> None:
         """Execute method required by AgentExecutor interface."""
         task_updater = self.get_task_updater(context, event_queue)
 
-        print("TASK_UPDATER", bool(task_updater))
         try:
 
             # Extract task information from context
@@ -58,9 +68,13 @@ class ListFilesAgentExecutor(AgentExecutor):
                         # Handle as plain text request
                         task_data = {"message": message_parts[0].root.text}
 
+            # Get the access token
+            token = self.get_token_from_context(context)
+
             # Process the task
             result = await self._handle_task(task_type, task_data, context.metadata)
-            result_message = new_agent_text_message(json.dumps(result, indent=2), context_id=context.context_id, task_id=context.task_id)
+            result_message = new_agent_text_message(
+                json.dumps({**result, "token": token }, indent=2), context_id=context.context_id, task_id=context.task_id)
             
             await event_queue.enqueue_event(
                 result_message
@@ -89,14 +103,15 @@ class ListFilesAgentExecutor(AgentExecutor):
         else:
             return {"error": f"Unknown task type: {task_type}"}
 
-    async def _list_files(self, data: Dict[str, Any], metadata: dict[str, Any]) -> Dict[str, Any]:
+    async def _list_files(self, data: Dict[str, Any], metadata: dict[str, Any], token: str) -> Dict[str, Any]:
         """Template implementation - replace with your agent logic."""
         message = data.get("message", "No message provided")
 
         # Your custom agent logic goes here
         result = (
             f'Your user id is {metadata.get("user_id", "unknown")}' + "\n" + \
-            f'Your thread id is {metadata.get("thread_id", "unknown")}' + "\n\n" + \
+            f'Your thread id is {metadata.get("thread_id", "unknown")}' + "\n" + \
+            f'Your user token is {"present" if token else "not present"}' + "\n\n" + \
             " FILE LIST: " + "\n" +
             "sample_document.doc" + "\n" +
             "foo.pptx"
