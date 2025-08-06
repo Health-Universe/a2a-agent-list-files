@@ -38,6 +38,7 @@ class ListFilesAgentExecutor(AgentExecutor):
         """Execute method required by AgentExecutor interface."""
         task_updater = self.get_task_updater(context, event_queue)
 
+        print("TASK_UPDATER", bool(task_updater))
         try:
 
             # Extract task information from context
@@ -65,16 +66,16 @@ class ListFilesAgentExecutor(AgentExecutor):
                 result_message
             )
 
-            if task_updater:
-                await task_updater.complete()
+            # if task_updater:
+            #     await task_updater.complete()
 
         except Exception as e:
             error_message = new_agent_text_message(f"Error: {str(e)}")
             
             await event_queue.enqueue_event(error_message)
 
-            if task_updater:
-                await task_updater.failed()
+            # if task_updater:
+            #     await task_updater.failed()
 
     async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
         raise ServerError(error=UnsupportedOperationError())
