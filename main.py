@@ -95,7 +95,10 @@ class ListFilesAgentExecutor(AgentExecutor):
         # Your custom agent logic goes here
         result = (
             f'Your user id is {metadata.get("user_id", "unknown")}' + "\n" + \
-            f'Your thread id is {metadata.get("thread_id", "unknown")}' + "\n\n"
+            f'Your thread id is {metadata.get("thread_id", "unknown")}' + "\n\n" + \
+            " FILE LIST: " + "\n" +
+            "sample_document.doc" + "\n" +
+            "foo.pptx"
         )
 
         return result
